@@ -3,34 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unificar PDFs</title>
+    <title>Unificar PDFs desde Carpetas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/pdf-lib@1.4.0/dist/pdf-lib.min.js"></script>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-xl border border-slate-100">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-slate-100 my-6">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-slate-800 mb-2">Unificar PDFs</h1>
-            <p class="text-sm text-slate-500">Une tus archivos PDF de forma rápida y segura. Todo el proceso se realiza en tu navegador.</p>
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Unificar PDFs por Carpetas</h1>
+            <p class="text-sm text-slate-500">Arrastra tus carpetas mensuales aquí. La app buscará todos los PDFs en su interior de forma automática y los unificará de manera local.</p>
         </div>
 
         <div class="mb-6">
-            <label id="drop-zone" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-500 transition-colors p-4 text-center">
-                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                    <svg class="w-10 h-10 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            <div id="drop-zone" class="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-indigo-300 bg-indigo-50/30 rounded-xl cursor-pointer hover:bg-indigo-50 hover:border-indigo-500 transition-all p-4 text-center">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6 pointer-events-none">
+                    <svg class="w-12 h-12 text-indigo-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5M5 19v-2a2 2 0 002-2h2a2 2 0 002 2v2M14 11l3 3m0 0l3-3m-3 3V4"></path>
                     </svg>
-                    <p class="mb-1 text-sm text-slate-600 font-semibold">Haz clic para seleccionar o arrastra tus archivos</p>
-                    <p class="text-xs text-slate-400">Solo archivos PDF</p>
+                    <p class="mb-1 text-sm text-slate-700 font-semibold">Arrastra aquí tus carpetas o archivos individuales</p>
+                    <p class="text-xs text-slate-400">Escaneo recursivo automático de archivos PDF</p>
                 </div>
-                <input id="pdf-input" type="file" class="hidden" multiple accept="application/pdf" />
-            </label>
+            </div>
+        </div>
+
+        <div id="status-container" class="hidden mb-6 p-4 rounded-xl border">
+            <div class="flex items-center justify-between mb-2">
+                <h3 id="status-title" class="text-sm font-bold">Estado del escaneo</h3>
+                <span id="status-badge" class="text-xs px-2.5 py-0.5 rounded-full font-medium"></span>
+            </div>
+            <p id="status-message" class="text-xs text-slate-600 mb-3"></p>
+            
+            <div id="error-log-container" class="hidden">
+                <p class="text-xs font-semibold text-rose-700 mb-1">Archivos que no se pudieron cargar:</p>
+                <ul id="error-log" class="text-xs text-rose-600 list-disc list-inside space-y-1 max-h-24 overflow-y-auto bg-rose-50 p-2 rounded border border-rose-100"></ul>
+            </div>
         </div>
 
         <div id="file-list-container" class="hidden mb-6">
-            <h3 class="text-sm font-semibold text-slate-700 mb-3">Archivos cargados (se unirán en este orden):</h3>
-            <ul id="file-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-slate-700">Archivos listos para unificar (<span id="file-count">0</span>):</h3>
+                <button id="clear-btn" class="text-xs text-slate-400 hover:text-rose-600 font-medium transition-colors">Limpiar todo</button>
+            </div>
+            <ul id="file-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
                 </ul>
         </div>
 
@@ -38,47 +53,190 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
             </svg>
-            Unificar y Descargar
+            Unificar y Descargar PDF Final
         </button>
     </div>
 
     <script>
-        const pdfInput = document.getElementById('pdf-input');
+        const dropZone = document.getElementById('drop-zone');
         const fileListContainer = document.getElementById('file-list-container');
         const fileList = document.getElementById('file-list');
+        const fileCountSpan = document.getElementById('file-count');
         const mergeBtn = document.getElementById('merge-btn');
-        let selectedFiles = [];
+        const clearBtn = document.getElementById('clear-btn');
+        
+        // Elementos de estado
+        const statusContainer = document.getElementById('status-container');
+        const statusTitle = document.getElementById('status-title');
+        const statusBadge = document.getElementById('status-badge');
+        const statusMessage = document.getElementById('status-message');
+        const errorLogContainer = document.getElementById('error-log-container');
+        const errorLog = document.getElementById('error-log');
 
-        // Manejar la selección de archivos
-        pdfInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            
-            // Filtrar solo PDFs por seguridad
-            const pdfFiles = files.filter(file => file.type === 'application/pdf');
-            
-            if (pdfFiles.length > 0) {
-                selectedFiles = [...selectedFiles, ...pdfFiles];
-                updateUI();
-            }
+        let selectedFiles = [];
+        let failedFiles = [];
+
+        // Prevenir comportamiento por defecto del navegador al arrastrar cosas
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
         });
 
-        // Actualizar la interfaz con los archivos seleccionados
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Efecto visual al arrastrar sobre la zona
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('border-indigo-600', 'bg-indigo-50'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-indigo-600', 'bg-indigo-50'), false);
+        });
+
+        // Manejar el soltado (Drop) de carpetas o archivos
+        dropZone.addEventListener('drop', async (e) => {
+            const items = e.dataTransfer.items;
+            if (!items) return;
+
+            // Resetear estados de errores previos antes de una nueva carga
+            failedFiles = [];
+            
+            // Mostrar indicador visual de que está leyendo estructuras grandes
+            statusContainer.classList.remove('hidden');
+            showProcessingStatus();
+
+            let scanPromises = [];
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i].webkitGetAsEntry();
+                if (item) {
+                    scanPromises.push(traverseFileTree(item));
+                }
+            }
+
+            // Esperar a que lea todas las subcarpetas de manera recursiva
+            await Promise.all(scanPromises);
+            
+            // Actualizar la interfaz y mostrar el reporte final del escaneo
+            updateUI();
+            renderStatusReport();
+        });
+
+        // Función recursiva para navegar por las carpetas
+        function traverseFileTree(item, path = "") {
+            return new Promise((resolve) => {
+                if (item.isFile) {
+                    // Validar si es un PDF
+                    if (item.name.toLowerCase().endsWith('.pdf')) {
+                        item.file((file) => {
+                            // Guardamos la ruta relativa para mantener noción del origen de la carpeta
+                            file.relativePath = path + item.name;
+                            selectedFiles.push(file);
+                            resolve();
+                        }, (error) => {
+                            // Si falla al leer el archivo físico (permisos o corrupto)
+                            failedFiles.push(`${path + item.name} (Error de lectura de archivo)`);
+                            resolve();
+                        });
+                    } else {
+                        // Ignorar silenciosamente archivos que no sean PDF (ej. .DS_Store o imágenes)
+                        resolve();
+                    }
+                } else if (item.isDirectory) {
+                    const dirReader = item.createReader();
+                    let entries = [];
+
+                    // Los lectores de directorios de la API web requieren leer en bloques por si son muy grandes
+                    const readEntries = () => {
+                        dirReader.readEntries(async (result) => {
+                            if (!result.length) {
+                                let dirPromises = [];
+                                for (let entry of entries) {
+                                    dirPromises.push(traverseFileTree(entry, path + item.name + "/"));
+                                }
+                                await Promise.all(dirPromises);
+                                resolve();
+                            } else {
+                                entries = entries.concat(result);
+                                readEntries();
+                            }
+                        }, () => {
+                            failedFiles.push(`Carpeta: ${path + item.name} (No se pudo leer)`);
+                            resolve();
+                        });
+                    };
+                    readEntries();
+                }
+            });
+        }
+
+        // Mostrar estado intermedio de escaneo
+        function showProcessingStatus() {
+            statusTitle.innerText = "Escaneando estructuras...";
+            statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800";
+            statusBadge.innerText = "Procesando";
+            statusMessage.innerText = "Leyendo los directorios y archivos internos de las carpetas arrastradas...";
+            errorLogContainer.classList.add('hidden');
+        }
+
+        // Generar reporte de éxito o error solicitado
+        function renderStatusReport() {
+            statusContainer.classList.remove('hidden');
+            errorLog.innerHTML = '';
+
+            if (failedFiles.length === 0 && selectedFiles.length > 0) {
+                // Éxito completo
+                statusTitle.innerText = "Carga Finalizada";
+                statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-green-100 text-green-800";
+                statusBadge.innerText = "Éxito total";
+                statusMessage.innerText = `¡Todo se subió correctamente! Se encontraron y validaron ${selectedFiles.length} archivos PDF listos para unificar.`;
+                errorLogContainer.classList.add('hidden');
+            } else if (failedFiles.length > 0) {
+                // Hubo inconvenientes con algunos archivos
+                statusTitle.innerText = "Carga con incidencias";
+                statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-rose-100 text-rose-800";
+                statusBadge.innerText = "Errores detectados";
+                statusMessage.innerText = `Se cargaron con éxito ${selectedFiles.length} PDFs, pero ${failedFiles.length} archivo(s) no se pudieron subir de forma correcta.`;
+                
+                failedFiles.forEach(errFile => {
+                    const li = document.createElement('li');
+                    li.innerText = errFile;
+                    errorLog.appendChild(li);
+                });
+                errorLogContainer.classList.remove('hidden');
+            } else {
+                // No se encontraron PDFs válidos
+                statusTitle.innerText = "Escaneo vacío";
+                statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-100 text-slate-800";
+                statusBadge.innerText = "Sin PDFs";
+                statusMessage.innerText = "No se encontraron archivos con extensión .pdf en las carpetas seleccionadas.";
+                errorLogContainer.classList.add('hidden');
+            }
+        }
+
+        // Actualizar UI de la lista de combinación
         function updateUI() {
             fileList.innerHTML = '';
+            fileCountSpan.innerText = selectedFiles.length;
             
             if (selectedFiles.length > 0) {
                 fileListContainer.classList.remove('hidden');
-                mergeBtn.disabled = selectedFiles.length < 2; // Requiere al menos 2 archivos para unir
+                mergeBtn.disabled = selectedFiles.length < 2;
 
                 selectedFiles.forEach((file, index) => {
                     const li = document.createElement('li');
                     li.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700';
                     li.innerHTML = `
-                        <div class="flex items-center gap-2 truncate">
-                            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">${index + 1}</span>
-                            <span class="truncate">${file.name}</span>
+                        <div class="flex items-center gap-2 truncate pr-4">
+                            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded shrink-0">${index + 1}</span>
+                            <span class="truncate" title="${file.relativePath || file.name}">
+                                <span class="text-slate-400 text-xs">${file.relativePath ? file.relativePath.substring(0, file.relativePath.lastIndexOf('/') + 1) : ''}</span><b>${file.name}</b>
+                            </span>
                         </div>
-                        <button onclick="removeFile(${index})" class="text-rose-500 hover:text-rose-700 font-medium transition-colors ml-2">
+                        <button onclick="removeFile(${index})" class="text-rose-500 hover:text-rose-700 font-medium transition-colors shrink-0">
                             Eliminar
                         </button>
                     `;
@@ -90,69 +248,76 @@
             }
         }
 
-        // Eliminar un archivo de la lista
+        // Quitar un elemento individual de la lista
         window.removeFile = function(index) {
             selectedFiles.splice(index, 1);
             updateUI();
-            // Resetear el input por si quieren volver a cargar el mismo archivo
-            if(selectedFiles.length === 0) pdfInput.value = '';
+            if(selectedFiles.length === 0) {
+                statusContainer.classList.add('hidden');
+            } else {
+                renderStatusReport();
+            }
         }
 
-        // Lógica de fusión de PDFs utilizando PDF-Lib
+        // Resetear toda la herramienta
+        clearBtn.addEventListener('click', () => {
+            selectedFiles = [];
+            failedFiles = [];
+            statusContainer.classList.add('hidden');
+            updateUI();
+        });
+
+        // Fusionar los PDFs compilados recursivamente
         mergeBtn.addEventListener('click', async () => {
             if (selectedFiles.length < 2) return;
 
-            // Cambiar estado del botón mientras procesa
             mergeBtn.disabled = true;
             mergeBtn.innerHTML = `
                 <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Procesando archivos...
+                Unificando y empaquetando...
             `;
 
             try {
-                // Crear un nuevo documento PDF
                 const mergedPdf = await PDFLib.PDFDocument.create();
 
                 for (const file of selectedFiles) {
-                    // Leer el archivo como ArrayBuffer
-                    const fileBytes = await file.arrayBuffer();
-                    // Cargar el documento PDF individual
-                    const pdf = await PDFLib.PDFDocument.load(fileBytes);
-                    // Copiar todas las páginas al nuevo documento
-                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    try {
+                        const fileBytes = await file.arrayBuffer();
+                        const pdf = await PDFLib.PDFDocument.load(fileBytes);
+                        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                        copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    } catch (pdfError) {
+                        console.error(`Error procesando contenido del archivo individual: ${file.name}`, pdfError);
+                        alert(`El archivo "${file.name}" parece estar dañado o protegido con contraseña y no pudo unirse.`);
+                    }
                 }
 
-                // Guardar el PDF unificado
                 const mergedPdfBytes = await mergedPdf.save();
-
-                // Crear un enlace de descarga y dispararlo automáticamente
                 const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `PDF_Unificado_${Date.now()}.pdf`;
+                a.download = `PDF_Unificado_Completo_${Date.now()}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 
-                // Limpieza del DOM
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
             } catch (error) {
-                console.error('Error al unir los PDFs:', error);
-                alert('Ocurrió un error al procesar los archivos. Asegúrate de que no estén dañados o protegidos con contraseña.');
+                console.error('Error crítico al empaquetar final:', error);
+                alert('No se pudo compilar el archivo final. Verifica que tus documentos no estén bloqueados.');
             } finally {
-                // Restaurar el botón
                 updateUI();
+                renderStatusReport();
                 mergeBtn.innerHTML = `
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                     </svg>
-                    Unificar y Descargar
+                    Unificar y Descargar PDF Final
                 `;
             }
         });
