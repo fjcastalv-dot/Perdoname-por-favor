@@ -3,70 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f8f9fa;
-        }
-        .container {
-            text-align: center;
-            padding: 0 20px;
-        }
-        .btn-rojo {
-            padding: 20px 40px;
-            font-size: 22px;
-            font-weight: 600;
-            color: #ffffff;
-            background-color: #dc3545;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn-rojo:hover {
-            background-color: #bd2130;
-        }
-        .btn-rojo:active {
-            transform: scale(0.98);
-        }
-        #texto-disculpa {
-            font-size: 24px;
-            font-weight: 500;
-            color: #212529;
-            display: none;
-            line-height: 1.4;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-    </style>
+    <title>Unificar PDFs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/pdf-lib@1.4.0/dist/pdf-lib.min.js"></script>
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="container">
-        <!-- Botón principal -->
-        <button class="btn-rojo" id="boton" onclick="mostrarDisculpa()">Presioname</button>
-        
-        <!-- Texto oculto modificado -->
-        <h1 id="texto-disculpa">Perdoname no le vuelvo a hablar a ninguna pinche vieja, me encantas</h1>
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-xl border border-slate-100">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Unificar PDFs</h1>
+            <p class="text-sm text-slate-500">Une tus archivos PDF de forma rápida y segura. Todo el proceso se realiza en tu navegador.</p>
+        </div>
+
+        <div class="mb-6">
+            <label id="drop-zone" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-500 transition-colors p-4 text-center">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg class="w-10 h-10 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="mb-1 text-sm text-slate-600 font-semibold">Haz clic para seleccionar o arrastra tus archivos</p>
+                    <p class="text-xs text-slate-400">Solo archivos PDF</p>
+                </div>
+                <input id="pdf-input" type="file" class="hidden" multiple accept="application/pdf" />
+            </label>
+        </div>
+
+        <div id="file-list-container" class="hidden mb-6">
+            <h3 class="text-sm font-semibold text-slate-700 mb-3">Archivos cargados (se unirán en este orden):</h3>
+            <ul id="file-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                </ul>
+        </div>
+
+        <button id="merge-btn" disabled class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-lg shadow-indigo-100 disabled:shadow-none flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+            </svg>
+            Unificar y Descargar
+        </button>
     </div>
 
     <script>
-        function mostrarDisculpa() {
-            // Oculta el botón
-            document.getElementById("boton").style.display = "none";
-            // Muestra el texto
-            document.getElementById("texto-disculpa").style.display = "block";
-        }
-    </script>
+        const pdfInput = document.getElementById('pdf-input');
+        const fileListContainer = document.getElementById('file-list-container');
+        const fileList = document.getElementById('file-list');
+        const mergeBtn = document.getElementById('merge-btn');
+        let selectedFiles = [];
 
+        // Manejar la selección de archivos
+        pdfInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            
+            // Filtrar solo PDFs por seguridad
+            const pdfFiles = files.filter(file => file.type === 'application/pdf');
+            
+            if (pdfFiles.length > 0) {
+                selectedFiles = [...selectedFiles, ...pdfFiles];
+                updateUI();
+            }
+        });
+
+        // Actualizar la interfaz con los archivos seleccionados
+        function updateUI() {
+            fileList.innerHTML = '';
+            
+            if (selectedFiles.length > 0) {
+                fileListContainer.classList.remove('hidden');
+                mergeBtn.disabled = selectedFiles.length < 2; // Requiere al menos 2 archivos para unir
+
+                selectedFiles.forEach((file, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700';
+                    li.innerHTML = `
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">${index + 1}</span>
+                            <span class="truncate">${file.name}</span>
+                        </div>
+                        <button onclick="removeFile(${index})" class="text-rose-500 hover:text-rose-700 font-medium transition-colors ml-2">
+                            Eliminar
+                        </button>
+                    `;
+                    fileList.appendChild(li);
+                });
+            } else {
+                fileListContainer.classList.add('hidden');
+                mergeBtn.disabled = true;
+            }
+        }
+
+        // Eliminar un archivo de la lista
+        window.removeFile = function(index) {
+            selectedFiles.splice(index, 1);
+            updateUI();
+            // Resetear el input por si quieren volver a cargar el mismo archivo
+            if(selectedFiles.length === 0) pdfInput.value = '';
+        }
+
+        // Lógica de fusión de PDFs utilizando PDF-Lib
+        mergeBtn.addEventListener('click', async () => {
+            if (selectedFiles.length < 2) return;
+
+            // Cambiar estado del botón mientras procesa
+            mergeBtn.disabled = true;
+            mergeBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Procesando archivos...
+            `;
+
+            try {
+                // Crear un nuevo documento PDF
+                const mergedPdf = await PDFLib.PDFDocument.create();
+
+                for (const file of selectedFiles) {
+                    // Leer el archivo como ArrayBuffer
+                    const fileBytes = await file.arrayBuffer();
+                    // Cargar el documento PDF individual
+                    const pdf = await PDFLib.PDFDocument.load(fileBytes);
+                    // Copiar todas las páginas al nuevo documento
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                // Guardar el PDF unificado
+                const mergedPdfBytes = await mergedPdf.save();
+
+                // Crear un enlace de descarga y dispararlo automáticamente
+                const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PDF_Unificado_${Date.now()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Limpieza del DOM
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+            } catch (error) {
+                console.error('Error al unir los PDFs:', error);
+                alert('Ocurrió un error al procesar los archivos. Asegúrate de que no estén dañados o protegidos con contraseña.');
+            } finally {
+                // Restaurar el botón
+                updateUI();
+                mergeBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    Unificar y Descargar
+                `;
+            }
+        });
+    </script>
 </body>
 </html>
