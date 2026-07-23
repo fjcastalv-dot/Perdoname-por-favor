@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz de Reconocimiento de Invitados VIP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased">
+
+    <!-- Header -->
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+                    <i class="fa-solid fa-id-card text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Quiz de Reconocimiento</h1>
+                    <p class="text-xs text-slate-400">Invitados Especiales & Autoridades</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <span class="block text-xs text-slate-400 uppercase tracking-wider">Puntaje</span>
+                    <span id="score" class="font-black text-xl text-emerald-400">0</span>
+                </div>
+                <button onclick="restartQuiz()" class="text-slate-400 hover:text-white transition p-2" title="Reiniciar Quiz">
+                    <i class="fa-solid fa-rotate-right text-lg"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Barra de Progreso -->
+        <div class="w-full bg-slate-700 h-1.5">
+            <div id="progress-bar" class="bg-blue-500 h-1.5 transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-xl w-full mx-auto p-4 my-auto">
+        <div id="quiz-card" class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transition-all duration-300">
+            
+            <!-- Contador de Pregunta -->
+            <div class="bg-slate-800/50 px-6 pt-4 flex justify-between items-center text-xs text-slate-400">
+                <span>Tarjeta <strong id="current-index" class="text-slate-200">1</strong> de <strong id="total-count" class="text-slate-200">25</strong></span>
+                <span id="streak" class="text-amber-400 font-semibold"><i class="fa-solid fa-fire mr-1"></i>Racha: 0</span>
+            </div>
+
+            <!-- Imagen del Invitado -->
+            <div class="p-6 flex flex-col items-center">
+                <div class="relative group">
+                    <div class="w-44 h-44 md:w-52 md:h-52 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-xl bg-slate-950 flex items-center justify-center">
+                        <img id="guest-image" src="" alt="Invitado Especial" class="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300/1e293b/94a3b8?text=Sin+Imagen+en+fotos/';">
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 italic">¿A quién corresponde esta fotografía?</p>
+            </div>
+
+            <!-- Opciones de Respuesta -->
+            <div id="options-container" class="px-6 pb-6 space-y-3">
+                <!-- Se generan dinámicamente con JS -->
+            </div>
+
+            <!-- Feedback Message -->
+            <div id="feedback" class="hidden px-6 py-3 text-center text-sm font-semibold border-t border-slate-700"></div>
+            
+            <!-- Botón Siguiente -->
+            <div class="p-4 bg-slate-800/80 border-t border-slate-700/50 flex justify-end">
+                <button id="next-btn" onclick="nextQuestion()" disabled class="w-full py-3 px-6 bg-slate-700 text-slate-400 font-bold rounded-xl cursor-not-allowed transition flex items-center justify-center gap-2">
+                    <span>Siguiente Persona</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Vista Final de Resultados -->
+        <div id="results-card" class="hidden bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8 text-center space-y-6">
+            <div class="inline-flex p-4 bg-blue-500/10 text-blue-400 rounded-full mb-2">
+                <i class="fa-solid fa-trophy text-5xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white">¡Sesión de Estudio Completada!</h2>
+            <p class="text-slate-300 text-sm max-w-md mx-auto">Has repasado a todo el grupo de invitados y autoridades del protocolo.</p>
+            
+            <div class="bg-slate-900/60 p-6 rounded-xl border border-slate-700/50 grid grid-cols-2 gap-4">
+                <div>
+                    <span class="block text-xs text-slate-400 uppercase">Aciertos</span>
+                    <span id="final-score" class="text-3xl font-black text-emerald-400">0 / 0</span>
+                </div>
+                <div>
+                    <span class="block text-xs text-slate-400 uppercase">Efectividad</span>
+                    <span id="final-percentage" class="text-3xl font-black text-blue-400">0%</span>
+                </div>
+            </div>
+
+            <button onclick="restartQuiz()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Volver a Estudiar</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 py-4 border-t border-slate-800 text-center text-xs text-slate-500">
+        <p>App de Reconocimiento VIP • Optimizado para GitHub Pages</p>
+    </footer>
+
+    <!-- Quiz Logic Script -->
+    <script>
+        // Datos de Invitados Extraídos
+        const guestsData = [
+            { id: "1", name: "Aimé Lizama Fernández", title: "Vicepresidenta de USEM Quintana Roo" },
+            { id: "2", name: "Aleida Rodríguez Nava", title: "Instituto Mexicano del Colegio de Contadores Públicos de Cancún" },
+            { id: "3", name: "Alonso Soto Padilla", title: "Hyatt Inclusive Collection" },
+            { id: "4", name: "Bellamar Garrido", title: "Segunda Regidora de Isla Mujeres" },
+            { id: "5", name: "Brigitte Ortega Aviña", title: "Directora de Mujer es Poder" },
+            { id: "6", name: "Berenice Sosa Osorio", title: "Ayuntamiento Benito Juárez" },
+            { id: "7", name: "Cristopher Malpica Morales", title: "Director del COQCYT" },
+            { id: "8", name: "Candy Hernández", title: "Delegada de INMOVEQROO Benito Juárez" },
+            { id: "9", name: "Elsy María Dzul Dzul", title: "Directora del Colegio de Bachilleres Plantel III" },
+            { id: "10", name: "Juan Román Martin", title: "Representante de APIQROO en Isla Mujeres" },
+            { id: "11", name: "Federico Pérez Romero", title: "Presidente del Consejo Consultivo de CCME Quintana Roo" },
+            { id: "12", name: "Francisco Alejandro Carrillo Flores", title: "Senador" },
+            { id: "13", name: "Francisco Arjona", title: "INMOVEQROO" },
+            { id: "14", name: "Gerardo Reynoso", title: "Grupo Turquesa" },
+            { id: "15", name: "Julieta Vargas Laguna", title: "Vicepresidenta Nacional de CONCAAM" },
+            { id: "16", name: "José del Carmen Ríos Chale", title: "Isla Mujeres" },
+            { id: "17", name: "Luis Alberto Tun Calderón", title: "Subsecretario de Atención a la Educación Zona Norte" },
+            { id: "18", name: "Laura Olivera Castillo", title: "Gerente Administrativo Ópticas Espadas" },
+            { id: "19", name: "María Jovita Portillo Navarro", title: "Presidenta COPARMEX Quintana Roo" },
+            { id: "20", name: "Miriam Fernanda Vargas Vargas", title: "Acompañante Julieta Vargas" },
+            { id: "21", name: "Mercedes Purificación Hernández Garzón", title: "Presidenta del Consejo de Mujeres Empresarias" },
+            { id: "22", name: "Neysi Alcocer Coronado", title: "Subdirectora Académica COBACH III" },
+            { id: "23", name: "Perla Flores Navarro", title: "Presidenta de CANIRAC Cancún" },
+            { id: "25", name: "Sandra Hannon Campos", title: "Presidenta de USEM Capítulo Quintana Roo" },
+            { id: "26", name: "Víctor Alvarado Gutiérrez", title: "Delegado de INMOVEQROO Isla Mujeres" }
+        ];
+
+        let queue = [];
+        let currentIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let answered = false;
+
+        function shuffle(array) {
+            return [...array].sort(() => Math.random() - 0.5);
+        }
+
+        function initQuiz() {
+            queue = shuffle(guestsData);
+            currentIndex = 0;
+            score = 0;
+            streak = 0;
+            answered = false;
+            
+            document.getElementById('score').innerText = score;
+            document.getElementById('streak').innerHTML = `<i class="fa-solid fa-fire mr-1"></i>Racha: ${streak}`;
+            document.getElementById('total-count').innerText = queue.length;
+            
+            document.getElementById('results-card').classList.add('hidden');
+            document.getElementById('quiz-card').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answered = false;
+            const currentGuest = queue[currentIndex];
+
+            // Actualizar interfaz basica
+            document.getElementById('current-index').innerText = currentIndex + 1;
+            document.getElementById('progress-bar').style.width = `${((currentIndex) / queue.length) * 100}%`;
+            
+            // Cargar Imagen (busca en la carpeta fotos/)
+            const imgElement = document.getElementById('guest-image');
+            imgElement.src = `fotos/${currentGuest.id}.jpg`;
+
+            // Ocultar feedback y deshabilitar botón siguiente
+            const feedbackEl = document.getElementById('feedback');
+            feedbackEl.classList.add('hidden');
+            feedbackEl.className = "hidden px-6 py-3 text-center text-sm font-semibold border-t border-slate-700";
+
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = true;
+            nextBtn.className = "w-full py-3 px-6 bg-slate-700 text-slate-500 font-bold rounded-xl cursor-not-allowed transition flex items-center justify-center gap-2";
+
+            // Generar Opciones Múltiples (1 Correcta + 3 Señuelos)
+            const distractors = guestsData.filter(g => g.id !== currentGuest.id);
+            const shuffledDistractors = shuffle(distractors).slice(0, 3);
+            const options = shuffle([currentGuest, ...shuffledDistractors]);
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = "option-btn w-full p-4 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-left transition duration-200 flex flex-col justify-center focus:outline-none";
+                button.onclick = () => checkAnswer(option, currentGuest, button);
+
+                button.innerHTML = `
+                    <span class="font-bold text-slate-100 text-base">${option.name}</span>
+                    <span class="text-xs text-slate-400 line-clamp-1">${option.title}</span>
+                `;
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selected, correct, buttonElement) {
+            if (answered) return;
+            answered = true;
+
+            const allButtons = document.querySelectorAll('.option-btn');
+            const feedbackEl = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+
+            allButtons.forEach(btn => btn.disabled = true);
+
+            if (selected.id === correct.id) {
+                // Correcto
+                buttonElement.classList.remove('bg-slate-800/80', 'border-slate-700');
+                buttonElement.classList.add('bg-emerald-900/40', 'border-emerald-500', 'text-emerald-200');
+                
+                score++;
+                streak++;
+                document.getElementById('score').innerText = score;
+                document.getElementById('streak').innerHTML = `<i class="fa-solid fa-fire mr-1"></i>Racha: ${streak}`;
+
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-2"></i> ¡Correcto! Es ${correct.name}`;
+                feedbackEl.classList.remove('hidden');
+                feedbackEl.classList.add('bg-emerald-950/50', 'text-emerald-300', 'border-emerald-800/50');
+            } else {
+                // Incorrecto
+                buttonElement.classList.remove('bg-slate-800/80', 'border-slate-700');
+                buttonElement.classList.add('bg-rose-900/40', 'border-rose-500', 'text-rose-200');
+
+                streak = 0;
+                document.getElementById('streak').innerHTML = `<i class="fa-solid fa-fire mr-1"></i>Racha: ${streak}`;
+
+                // Destacar la correcta
+                allButtons.forEach(btn => {
+                    if (btn.innerText.includes(correct.name)) {
+                        btn.classList.remove('bg-slate-800/80', 'border-slate-700');
+                        btn.classList.add('bg-emerald-900/30', 'border-emerald-600/60');
+                    }
+                });
+
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 mr-2"></i> Incorrecto. Es <strong>${correct.name}</strong> (${correct.title})`;
+                feedbackEl.classList.remove('hidden');
+                feedbackEl.classList.add('bg-rose-950/50', 'text-rose-300', 'border-rose-800/50');
+            }
+
+            // Habilitar botón Siguiente
+            nextBtn.disabled = false;
+            nextBtn.className = "w-full py-3 px-6 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer";
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < queue.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-card').classList.add('hidden');
+            document.getElementById('results-card').classList.remove('hidden');
+            
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('final-score').innerText = `${score} / ${queue.length}`;
+            
+            const pct = Math.round((score / queue.length) * 100);
+            document.getElementById('final-percentage').innerText = `${pct}%`;
+        }
+
+        function restartQuiz() {
+            initQuiz();
+        }
+
+        // Iniciar al cargar página
+        window.onload = initQuiz;
+    </script>
+</body>
+</html>
